@@ -1,5 +1,6 @@
 # XSS攻击
 ## 实验背景
+**在上学期的环境下进行搭建**
 * Windows主机
 ## 实验完成度
 * [x] 完成XSS攻击
@@ -25,7 +26,8 @@
     $name=$_POST["name"]; 
     echo $name;  
 ?>
-```  
+```
+4. D:\wamp\Apache24\bin  
 4. `localhost://1.html`访问后，在对话框里输入`<script>alert('hack')</script>`              
 ![](./img/ok.png)                 
 ![](./img/after.png)               
