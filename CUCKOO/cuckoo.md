@@ -35,6 +35,7 @@
 2. 那怎么隔离呢？虚拟机。所以安全研究人员们，开发了一种专门隔离恶意软件（使其恶意行为之限定在虚拟机内部，不会对其他环境造成而已的破坏）同时又可以追踪分析软件行为的的工具。就是沙箱。
 3. 目前应用得最广泛的沙箱是 [cuckoo](https://cuckoosandbox.org/)。比较幸运的是它的编程接口是python的。使用cuckoo，你不用去过分深入的研究让人头痛的系统内核机制和指令集，在cuckoo的中就可方便的进行程序行为分析了。
 4.  今天两个重点，一个是现在软件安全防御体系的一个现状和概要的发展过程。第二是在现在的软件安全防御体系中一个非常重要的点，程序行为分析的相关原理和技术。
+
 ## 实验背景
 * Ubuntu 16.04
 * windows-xp
@@ -182,8 +183,11 @@ cuckoo web runserver
 3. 提交样本
 ![](./img/cuckooweb.png)                                  
 * 需要留意的是，左侧的package可以用于指定Cuckoo以什么样的方法来运行你提交的样本。正常情况下，如果保持default的话，Cuckoo会根据文件内容自动进行选择（即进行文件类型识别，根据文件类型选择合适的方式）。但是这里是有bug的，你会发现它根本无法自动选择，而且在命令行还会抛出错误信息    
+4. 样本运行完后，可以查看报告
+> [cuckoo使用示例](https://www.anquanke.com/post/id/158553)
 
-## 实验问题
+![](./img/cuckooceshibaogao.png)
+## 实验问题 
 1. 安装cuckoo时，报错
 ```bash
 ERROR: Could not find a version that satisfies the requirement django==1.8.4 (from cuckoo) (from versions: none)
@@ -244,10 +248,14 @@ iface eth1 inet dhcp
 * processing.conf：用于启用和配置处理模块。
 * reporting.conf：用于启用或禁用报告格式。
 * 要让Cuckoo工作，你至少应该编辑cuckoo.conf和 < machinery > .conf
+
+3. Cuckoo sandbox架构 
+Cuckoo sandbox主要由中央管理软件和各分析虚拟机组成。中央管理软件也称为Host machine，负责管理各样本的分析工作，如启动分析工作、行为dump以及生成报告等；分析虚拟机又称为Guest Machine，主要完成对恶意程序的分析以及向中央管理软件报告分析结果等工作。每个分析虚拟机都是一个相对独立干净的执行环境，能安全隔离各恶意程序的执行和分析工作。沙盒的系统架构图如下图所示：
+![](./img/jiagou.png)                                      
 ## 参考资料
 * [cuckoo](https://cuckoosandbox.org/)
 * [Ubuntu16.04安装cuckoo sandbox](https://blog.csdn.net/root__user/article/details/89251386)
 * [cuckoo官方安装手册](https://cuckoo.sh/docs/installation/index.html)
 * [python windows下载](https://www.python.org/downloads/windows/)
 * [VirtualBox 安装 XP 虚拟机与主机共享文件夹设置教程](https://wenku.baidu.com/view/94ce1f8cbceb19e8b8f6ba27.html)
-* [十分钟学会恶意样本分析，一眼看透无所遁形](https://zhuanlan.zhihu.com/p/43410960)
+* [十分钟学会恶意样本分析，一眼看透无所遁形](https://www.anquanke.com/post/id/158553)
