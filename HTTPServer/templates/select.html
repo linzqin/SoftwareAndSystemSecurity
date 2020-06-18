@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>中传要闻</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<form action="/search"/>
+    <input type="text" name="wanted" value="" default="传媒">
+    <input type="submit" value="搜索">
+    </form>
+<img src="static/{{pic}}" width="1200" height="200"><br>
+
+<font size="18">中传要闻</font>
+<h5>新闻总数：{{count}}</h5>
+<div>
+   <script src="static/d3.v3.min.js" charset="utf-8"></script>
+	<script>
+
+		var width=(window.innerWidth||document.documentElement.clientWidth||document.body.clientWidth)*0.98;
+		var height=(window.innerHeight||document.documentElement.clientHeight||document.body.clientHeight)*0.9;
+		var color = d3.scale.category10();
+
+		var dataset =new Array(10);
+        /*for (var i=0;i<dataset.length;i++){
+			dataset[i]=height*Math.random();
+
+
+		}
+        */
+         var i=0;
+		{% for r in rs %}
+
+		     dataset[i]={{r[5]}}
+		     i=i+1;
+        {%
+        endfor
+        %}
+
+		var svg = d3.select("body")			//选择<body>
+					.append("svg")			//在<body>中添加<svg>
+					.attr("width", width)	//设定<svg>的宽度属性
+					.attr("height", height);//设定<svg>的高度属性
+		//矩形所占的宽度（包括空白），单位为像素
+		var rectStep =width/dataset.length;
+		//矩形所占的宽度（不包括空白），单位为像素
+		var rectWidth =rectStep-10;
+		var rect = svg.selectAll("rect")
+						.data(dataset)		//绑定数据
+						.enter()			//获取enter部分
+						.append("rect")	    //添加rect元素，使其与绑定数组的长度一致
+						.attr("x", function(d,i){		//设置矩形的x坐标
+							return i * rectStep;
+						})
+						.attr("y", function(d){		//设置矩形的y坐标
+							return height-d;
+						})
+						.attr("fill", function(i){
+							return color(i);
+						})
+						.attr("width",rectWidth)		//设置矩形的宽度
+						.attr("height",function(d){	//设置矩形的高度
+							return d;
+						});
+      var text = svg.selectAll("text")
+				.data(dataset)			//绑定数据
+				.enter()				//获取enter部分
+				.append("text")			//添加text元素，使其与绑定数组的长度一致
+				.attr("fill","green")
+				.attr("font-size","24px")
+				.attr("text-anchor","middle")
+				.attr("x", function(d,i){
+					return i * rectStep;
+				})
+				.attr("y", function(d){
+					return height-d-26;
+				})
+				.attr("dx",rectWidth/2)
+				.attr("dy","1em")
+				.text(function(d){
+					return Math.floor(d);
+				});
+
+	</script>
+
+</div>
+{%   endfor
+%}
+
+</body>
+
+</html>
+
